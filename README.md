@@ -16,18 +16,56 @@
 
 ## 安装
 
-将 `SKILL.md` 放到你的 Claude Code skills 目录下：
+### 一键安装（推荐）
 
 ```bash
-mkdir -p ~/.claude/skills/afeaturemerge
-cp SKILL.md ~/.claude/skills/afeaturemerge/SKILL.md
+mkdir -p ~/.claude/skills/afeaturemerge && \
+  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/SKILL.md \
+  -o ~/.claude/skills/afeaturemerge/SKILL.md
+```
+
+### 通过 git clone 安装
+
+```bash
+git clone https://github.com/haxianhe/afeaturemerge.git /tmp/afeaturemerge && \
+  mkdir -p ~/.claude/skills/afeaturemerge && \
+  cp /tmp/afeaturemerge/SKILL.md ~/.claude/skills/afeaturemerge/SKILL.md
+```
+
+### 手动安装
+
+1. 下载本仓库的 [`SKILL.md`](https://github.com/haxianhe/afeaturemerge/blob/main/SKILL.md)
+2. 放到以下路径：
+
+```
+~/.claude/skills/afeaturemerge/SKILL.md
+```
+
+### 验证安装
+
+开启新的 Claude Code 会话，说一句：
+
+```
+参考 LangChain 的 Memory 机制，在我的项目里实现会话记忆功能
+```
+
+如果 Claude 能识别并开始询问参考系统和目标应用的信息，说明 Skill 已生效。
+
+### 更新
+
+重新执行一键安装命令即可覆盖更新：
+
+```bash
+mkdir -p ~/.claude/skills/afeaturemerge && \
+  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/SKILL.md \
+  -o ~/.claude/skills/afeaturemerge/SKILL.md
 ```
 
 ---
 
-## 何时使用
+## 使用
 
-当你说出以下这类话时，Claude 会自动激活这个 Skill：
+安装完成后无需任何配置。当你说出以下这类话时，Claude 会**自动激活**这个 Skill：
 
 | 你说的话 | 示例 |
 |---------|------|
@@ -65,7 +103,7 @@ cp SKILL.md ~/.claude/skills/afeaturemerge/SKILL.md
 
 ---
 
-## 产出物说明
+## 产出物
 
 ### 文档一：参考系统分析
 - 核心设计理念（为什么这样设计）
@@ -92,32 +130,6 @@ cp SKILL.md ~/.claude/skills/afeaturemerge/SKILL.md
 
 ---
 
-## 快速上手示例
-
-**示例 1：有现有实现**
-
-```
-参考 LangChain 的 Memory 机制，在 my-chat-app 里实现会话记忆功能
-```
-
-Claude 会：
-1. 确认：参考 LangChain Memory，目标 my-chat-app
-2. 并行调研 LangChain Memory 文档 + 搜索 my-chat-app 现有会话实现
-3. 输出三份文档，可参考的直接给改造方案，不可参考的独立设计
-
-**示例 2：从零实现**
-
-```
-参考 OpenAI Assistants API 的 Thread 设计，给我们的 API 加多轮对话支持
-```
-
-Claude 会：
-1. 追问目标模块是哪个
-2. 调研 OpenAI Thread 文档 + 确认我方无现有实现
-3. 文档三全部走独立设计流程
-
----
-
 ## 常见问题
 
 **Q：参考系统没有公开文档怎么办？**
@@ -130,21 +142,11 @@ Claude 会：
 
 **Q：最终文档会保存在哪里？**
 
-按优先级：知识库 MCP 工具（如已配置，如语雀、Confluence、Notion 等）→ 当前目录的 `docs/` 文件夹。
+按优先级：知识库 MCP 工具（如已配置，如语雀、Confluence、钉钉等）→ 当前目录的 `docs/` 文件夹。
 
 **Q：如果参考系统和我们系统差距极小，还会产出文档吗？**
 
 会。Claude 会如实说明差距很小，并指出哪些可以直接复用，避免重复造轮子。
-
----
-
-## 质量标准
-
-这个 Skill 要求 Claude 遵循以下原则：
-- **有依据，不猜测**：所有结论来自实际文档或代码，而非推断
-- **两边都深入**：参考系统和自己系统都要认真研究，不走捷径
-- **方案可落地**：技术方案具体到模块/类级别，不停留在概念层
-- **代码片段精选**：只保留最能说明问题的关键片段
 
 ---
 
