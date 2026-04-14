@@ -2,14 +2,14 @@
 # afeaturemerge-sync.sh
 # PostToolUse hook：检测写入 docs/afeaturemerge/，自动触发云端知识库同步提示
 #
-# 安装：见 README.md 的 Hook 配置说明
+# 安装：curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash
 # 配置示例（~/.claude/settings.json）：
 #   {
 #     "hooks": {
 #       "PostToolUse": [
 #         {
-#           "matcher": "Write",
-#           "hooks": [{ "type": "command", "command": "bash ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh", "timeout": 5 }]
+#           "matcher": "Write|Edit",
+#           "hooks": [{ "type": "command", "command": "~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh", "timeout": 30 }]
 #         }
 #       ]
 #     }

@@ -32,48 +32,22 @@ claude mcp add superpowers -- npx -y @superpower-sh/cli@latest
 ### 一键安装（推荐）
 
 ```bash
-mkdir -p ~/.claude/skills/afeaturemerge/hooks && \
-  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/SKILL.md \
-  -o ~/.claude/skills/afeaturemerge/SKILL.md && \
-  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/hooks/afeaturemerge-sync.sh \
-  -o ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh && \
-  chmod +x ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh
+curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash
 ```
+
+安装脚本自动完成：
+- 下载 Skill 文件到 `~/.claude/skills/afeaturemerge/`
+- 下载并注册 PostToolUse hook 脚本
+- 将 hook 配置写入 `~/.claude/settings.json`
+
+安装完成后重启 Claude Code 即可生效。
 
 ### 通过 git clone 安装
 
 ```bash
 git clone https://github.com/haxianhe/afeaturemerge.git /tmp/afeaturemerge && \
-  mkdir -p ~/.claude/skills/afeaturemerge/hooks && \
-  cp /tmp/afeaturemerge/SKILL.md ~/.claude/skills/afeaturemerge/SKILL.md && \
-  cp /tmp/afeaturemerge/hooks/afeaturemerge-sync.sh ~/.claude/skills/afeaturemerge/hooks/ && \
-  chmod +x ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh
+  bash /tmp/afeaturemerge/install.sh
 ```
-
-### 配置云端知识库自动同步（可选）
-
-安装 hook 后，在 `~/.claude/settings.json` 中添加以下配置，即可在文档写入时自动触发云端知识库同步：
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-> **说明**：hook 监听所有 `Write` 工具调用，仅当写入路径包含 `docs/afeaturemerge/` 时才会触发同步提示，不影响其他文件操作。
 
 ### 验证安装
 
@@ -87,15 +61,10 @@ git clone https://github.com/haxianhe/afeaturemerge.git /tmp/afeaturemerge && \
 
 ### 更新
 
-重新执行一键安装命令即可覆盖更新：
+重新执行一键安装命令即可覆盖更新（已有 hook 配置会自动跳过）：
 
 ```bash
-mkdir -p ~/.claude/skills/afeaturemerge/hooks && \
-  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/SKILL.md \
-  -o ~/.claude/skills/afeaturemerge/SKILL.md && \
-  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/hooks/afeaturemerge-sync.sh \
-  -o ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh && \
-  chmod +x ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh
+curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash
 ```
 
 ---
