@@ -14,32 +14,66 @@
 
 ---
 
+## 前置依赖
+
+afeaturemerge 在产出方案阶段会调用 `brainstorming` skill，**需要提前安装**：
+
+```bash
+# 安装 superpowers 插件（包含 brainstorming skill）
+claude mcp add superpowers -- npx -y @superpower-sh/cli@latest
+```
+
+> 详见 [superpowers 安装文档](https://github.com/superpowers-sh/superpowers)。
+
+---
+
 ## 安装
 
 ### 一键安装（推荐）
 
 ```bash
-mkdir -p ~/.claude/skills/afeaturemerge && \
+mkdir -p ~/.claude/skills/afeaturemerge/hooks && \
   curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/SKILL.md \
-  -o ~/.claude/skills/afeaturemerge/SKILL.md
+  -o ~/.claude/skills/afeaturemerge/SKILL.md && \
+  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/hooks/afeaturemerge-sync.sh \
+  -o ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh && \
+  chmod +x ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh
 ```
 
 ### 通过 git clone 安装
 
 ```bash
 git clone https://github.com/haxianhe/afeaturemerge.git /tmp/afeaturemerge && \
-  mkdir -p ~/.claude/skills/afeaturemerge && \
-  cp /tmp/afeaturemerge/SKILL.md ~/.claude/skills/afeaturemerge/SKILL.md
+  mkdir -p ~/.claude/skills/afeaturemerge/hooks && \
+  cp /tmp/afeaturemerge/SKILL.md ~/.claude/skills/afeaturemerge/SKILL.md && \
+  cp /tmp/afeaturemerge/hooks/afeaturemerge-sync.sh ~/.claude/skills/afeaturemerge/hooks/ && \
+  chmod +x ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh
 ```
 
-### 手动安装
+### 配置云端知识库自动同步（可选）
 
-1. 下载本仓库的 [`SKILL.md`](https://github.com/haxianhe/afeaturemerge/blob/main/SKILL.md)
-2. 放到以下路径：
+安装 hook 后，在 `~/.claude/settings.json` 中添加以下配置，即可在文档写入时自动触发云端知识库同步：
 
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
 ```
-~/.claude/skills/afeaturemerge/SKILL.md
-```
+
+> **说明**：hook 监听所有 `Write` 工具调用，仅当写入路径包含 `docs/afeaturemerge/` 时才会触发同步提示，不影响其他文件操作。
 
 ### 验证安装
 
@@ -56,16 +90,19 @@ git clone https://github.com/haxianhe/afeaturemerge.git /tmp/afeaturemerge && \
 重新执行一键安装命令即可覆盖更新：
 
 ```bash
-mkdir -p ~/.claude/skills/afeaturemerge && \
+mkdir -p ~/.claude/skills/afeaturemerge/hooks && \
   curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/SKILL.md \
-  -o ~/.claude/skills/afeaturemerge/SKILL.md
+  -o ~/.claude/skills/afeaturemerge/SKILL.md && \
+  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/hooks/afeaturemerge-sync.sh \
+  -o ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh && \
+  chmod +x ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh
 ```
 
 ---
 
 ## 使用
 
-安装完成后无需任何配置。当你说出以下这类话时，Claude 会**自动激活**这个 Skill：
+安装完成后无需任何额外配置。当你说出以下这类话时，Claude 会**自动激活**这个 Skill：
 
 | 你说的话 | 示例 |
 |---------|------|
@@ -87,18 +124,17 @@ mkdir -p ~/.claude/skills/afeaturemerge && \
    Claude 解析参考系统、目标应用，展示理解摘要，等你确认
    ↓
 ② 并行调研（主要耗时）
-   ┌─────────────────────┬──────────────────────┐
+   ┌──────────────────────┬───────────────────────┐
    │ A. 调研参考系统      │ B. 调研你的现有系统   │
    │ 文档、代码、API 设计 │ 现有实现、局限、位置  │
-   └─────────────────────┴──────────────────────┘
+   └──────────────────────┴───────────────────────┘
    ↓
-③ 产出三份文档
+③ 产出三份文档 → 写入 docs/afeaturemerge/
    文档一：参考系统功能分析
    文档二：现有系统现状分析
    文档三：实现方案（含对比表 + 需求 + 技术方案）
    ↓
-④ 同步文档
-   知识库 MCP 工具 / 本地 docs/ 目录
+④ 云端知识库同步（配置 hook 后自动触发）
 ```
 
 ---
@@ -142,7 +178,7 @@ mkdir -p ~/.claude/skills/afeaturemerge && \
 
 **Q：最终文档会保存在哪里？**
 
-按优先级：知识库 MCP 工具（如已配置，如语雀、Confluence、钉钉等）→ 当前目录的 `docs/` 文件夹。
+保存到当前项目的 `docs/afeaturemerge/` 目录（跟着项目走，可纳入版本控制）。若配置了云端同步 hook，每份文档写入后会自动提示同步到对应知识库。
 
 **Q：如果参考系统和我们系统差距极小，还会产出文档吗？**
 
@@ -152,4 +188,4 @@ mkdir -p ~/.claude/skills/afeaturemerge && \
 
 ## 相关 Skill
 
-- `brainstorming`：afeaturemerge 在产出方案时会自动调用，用于设计每个功能块的需求和技术方案
+- [`brainstorming`](https://github.com/superpowers-sh/superpowers)：**必须安装的依赖**，afeaturemerge 在产出方案时会自动调用，用于设计每个功能块的需求和技术方案。来自 superpowers 插件，见「前置依赖」章节。
