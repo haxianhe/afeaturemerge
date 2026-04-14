@@ -6,6 +6,7 @@ description: |
   - 用户说"调研 X 是怎么做 Y 的，然后给出我们的实现方案"
   - 用户说"我想实现类似 X 的 Y 功能"
   - 用户提到"对标"、"参考"、"借鉴"某个系统/框架，并希望在自己系统落地
+  - 用户想在项目中新增某功能，但不知道参考哪些开源项目（通过 WebSearch 推荐后继续）
   - 任何需要：研究参考系统 → 分析自身现状 → 产出实现计划 的任务
 ---
 
@@ -35,11 +36,49 @@ description: |
 
 | 信息项 | 若缺失，如何处理 |
 |-------|--------------|
-| 参考系统名称及目标功能 | **必须追问**，无法继续 |
+| 参考系统名称及目标功能 | 见下方"参考系统缺失时的处理逻辑" |
 | 我方目标应用/模块 | **必须追问**，无法继续 |
 | 参考系统文档/代码位置 | 自行 `WebSearch` 搜索；若 WebSearch 不可用，改用 `sxng` 命令，无需追问 |
 | 我方代码位置 | 自行 `Grep` 搜索，无需追问 |
 | 特殊需求/约束 | 无则默认对齐参考系统 |
+
+### 参考系统缺失时的处理逻辑
+
+当用户**明确说不知道参考哪个开源项目**（如"我想加 X 功能，但不知道参考谁"），不要直接追问，而是：
+
+**第一步：WebSearch 主动推荐**
+
+用 `WebSearch`（不可用时改 `sxng`）搜索与该功能最相关的开源项目，关键词示例：
+```
+"{功能关键词} open source library best 2024"
+"{功能关键词} framework comparison"
+```
+
+**第二步：整理候选项**
+
+每个候选项说明：项目名、一句话定位、GitHub stars 量级、与用户场景的匹配度。
+
+**第三步：用 `AskUserQuestion` 让用户选择**
+
+```
+AskUserQuestion({
+  questions: [{
+    header: "参考系统",
+    question: "我找到以下几个常用的开源项目可供参考，你想对标哪一个？",
+    multiSelect: false,
+    options: [
+      { label: "项目 A", description: "一句话定位，⭐ stars 量级" },
+      { label: "项目 B", description: "一句话定位，⭐ stars 量级" },
+      { label: "项目 C", description: "一句话定位，⭐ stars 量级" },
+      { label: "其他", description: "请在 Other 文本框中填写你想参考的项目" }
+    ]
+  }]
+})
+```
+
+用户选定后，将其作为"参考系统"填入摘要，继续执行 **理解摘要确认** 流程。
+
+> 若参考系统名称已由用户明确提供但无文档位置，走原有的 `WebSearch` 自动补全逻辑，无需推荐。
 
 ### 理解摘要模板
 
@@ -294,7 +333,7 @@ AskUserQuestion({
 
 ## 示例触发
 
-**示例**：
+**示例一（参考系统明确）**：
 > 「参考 LangChain 的 Memory 机制，在 my-chat-app 里实现会话记忆功能」
 
 执行顺序：
@@ -305,3 +344,15 @@ AskUserQuestion({
 5. 产出文档二（现有实现分析）→ 写入 `docs/afeaturemerge/`
 6. 产出文档三（对比分析）→ 写入 `docs/afeaturemerge/`，区分可参考/不可参考部分，分别调用 brainstorming
 7. brainstorming 产出设计文档和实现计划
+
+---
+
+**示例二（参考系统未知，需推荐）**：
+> 「我想在 my-chat-app 里加个会话记忆功能，但不知道参考哪些开源项目比较好」
+
+执行顺序：
+1. 解析需求：目标系统明确（my-chat-app），功能点明确（会话记忆），参考系统**缺失且用户不确定**
+2. `WebSearch` 搜索相关开源项目（如 "conversation memory open source library best 2024"）
+3. 整理候选项（如 LangChain、LlamaIndex、MemGPT 等），用 `AskUserQuestion` 让用户选择
+4. 用户选定（如 LangChain）后，补全摘要，展示理解摘要并请用户确认
+5. **收到确认后**：后续流程与示例一相同（并行调研 → 产出三份文档 → brainstorming）
