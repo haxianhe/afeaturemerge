@@ -14,33 +14,32 @@
 
 ---
 
-## 前置依赖
+## 系统要求
 
-afeaturemerge 在产出方案阶段会调用 `brainstorming` skill，**需要提前安装**：
-
-```bash
-# 安装 superpowers 插件（包含 brainstorming skill）
-claude mcp add superpowers -- npx -y @superpower-sh/cli@latest
-```
-
-> 详见 [superpowers 安装文档](https://github.com/superpowers-sh/superpowers)。
+- **Python 3.11+**
+- **Node.js**（含 npm）
+- **git**
+- **curl**
 
 ---
 
 ## 安装
 
-### 一键安装（推荐）
-
 ```bash
 curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash
 ```
 
-安装脚本自动完成：
-- 下载 Skill 文件到 `~/.claude/skills/afeaturemerge/`
-- 下载并注册 PostToolUse hook 脚本
-- 将 hook 配置写入 `~/.claude/settings.json`
+脚本自动完成所有配置，无需手动安装任何依赖：
 
-安装完成后重启 Claude Code 即可生效。
+| 步骤 | 内容 |
+|------|------|
+| SearXNG | `git clone` 源码 → `pip install -e` → 注册系统服务（开机自启） |
+| sxng-cli | `npm install -g sxng-cli` → 写入配置指向 `http://127.0.0.1:8080` |
+| superpowers | `claude mcp add superpowers`（含 `brainstorming` skill） |
+| Skill 文件 | 下载到 `~/.claude/skills/afeaturemerge/` |
+| Hook | 写入 `~/.claude/settings.json`（文档写入后自动触发知识库同步） |
+
+安装完成后，**重启 Claude Code** 即可生效。
 
 ### 通过 git clone 安装
 
@@ -49,7 +48,17 @@ git clone https://github.com/haxianhe/afeaturemerge.git /tmp/afeaturemerge && \
   bash /tmp/afeaturemerge/install.sh
 ```
 
-### 验证安装
+### 更新
+
+重新执行安装命令即可（已有配置自动跳过）：
+
+```bash
+curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash
+```
+
+---
+
+## 验证安装
 
 开启新的 Claude Code 会话，说一句：
 
@@ -58,14 +67,6 @@ git clone https://github.com/haxianhe/afeaturemerge.git /tmp/afeaturemerge && \
 ```
 
 如果 Claude 能识别并开始询问参考系统和目标应用的信息，说明 Skill 已生效。
-
-### 更新
-
-重新执行一键安装命令即可覆盖更新（已有 hook 配置会自动跳过）：
-
-```bash
-curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash
-```
 
 ---
 
@@ -89,10 +90,10 @@ curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.
 ```
 用户输入
    ↓
-① 信息确认（30秒）
+① 信息确认
    Claude 解析参考系统、目标应用，展示理解摘要，等你确认
    ↓
-② 并行调研（主要耗时）
+② 并行调研
    ├─ A. 调研参考系统（文档、代码、API 设计）
    └─ B. 调研你的现有系统（现有实现、局限、位置）
    ↓
@@ -101,7 +102,7 @@ curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.
    文档二：现有系统现状分析
    文档三：实现方案（含对比表 + 需求 + 技术方案）
    ↓
-④ 云端知识库同步（配置 hook 后自动触发）
+④ 云端知识库同步（hook 自动触发）
 ```
 
 ---
@@ -133,6 +134,55 @@ curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.
 
 ---
 
+## 故障排查
+
+**SearXNG 未就绪**
+
+```bash
+# 查看启动日志
+tail -50 ~/.local/share/searxng/searxng.log
+
+# 检查端口是否被占用
+lsof -i :8080
+
+# 手动启动（验证是否能正常运行）
+python3 -m searx.webapp
+```
+
+**macOS：SearXNG 服务未自动启动**
+
+```bash
+# 手动加载 LaunchAgent
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.afeaturemerge.searxng.plist
+
+# 查看服务状态
+launchctl print gui/$(id -u)/com.afeaturemerge.searxng
+```
+
+**Linux：SearXNG 服务未自动启动**
+
+```bash
+# 查看服务状态
+systemctl --user status searxng
+
+# 查看日志
+journalctl --user -u searxng -n 50
+```
+
+**pip install 失败（Python 3.11+）**
+
+```bash
+pip3 install --break-system-packages -e ~/.local/share/searxng
+```
+
+**superpowers MCP 配置失败**
+
+```bash
+claude mcp add superpowers -- npx -y @superpower-sh/cli@latest
+```
+
+---
+
 ## 常见问题
 
 **Q：参考系统没有公开文档怎么办？**
@@ -153,6 +203,8 @@ curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.
 
 ---
 
-## 相关 Skill
+## 相关项目
 
-- [`brainstorming`](https://github.com/superpowers-sh/superpowers)：**必须安装的依赖**，afeaturemerge 在产出方案时会自动调用，用于设计每个功能块的需求和技术方案。来自 superpowers 插件，见「前置依赖」章节。
+- [superpowers](https://github.com/superpowers-sh/superpowers)：提供 `brainstorming` skill，afeaturemerge 在产出方案时自动调用
+- [SearXNG](https://github.com/searxng/searxng)：本地搜索服务，`WebSearch` 不可用时的搜索兜底
+- [sxng-cli](https://github.com/hkwuks/sxng-cli)：SearXNG 的命令行前端
