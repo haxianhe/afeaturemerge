@@ -31,6 +31,28 @@ echo "[1/2] 检查 SearXNG + sxng-cli..."
 SEARXNG_DIR="$HOME/.local/share/searxng"
 SEARXNG_LOG="$SEARXNG_DIR/searxng.log"
 
+# 查找 Python 3.10+（SearXNG 要求）
+# 优先查找带版本号的命令，再找 Homebrew，最后 fallback 到 python3
+PYTHON3=""
+for _py in python3.13 python3.12 python3.11 python3.10 \
+           /opt/homebrew/bin/python3 /usr/local/bin/python3 python3; do
+    if command -v "$_py" &>/dev/null; then
+        _ver=$("$_py" -c "import sys; print(sys.version_info[:2])" 2>/dev/null)
+        # 检查是否 >= (3, 10)
+        if "$_py" -c "import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)" 2>/dev/null; then
+            PYTHON3="$_py"
+            break
+        fi
+    fi
+done
+
+if [ -z "$PYTHON3" ]; then
+    echo "  ✗ 未找到 Python 3.10+，SearXNG 安装跳过"
+    echo "    macOS：brew install python@3.11"
+    echo "    Linux：sudo apt-get install python3.11"
+    FAILED_ITEMS+=("Python 3.10+（SearXNG 依赖）")
+fi
+
 # — 1a. clone 源码 —
 if [ -d "$SEARXNG_DIR/.git" ]; then
     echo "  ✓ SearXNG 源码已存在（$SEARXNG_DIR）"
@@ -44,27 +66,43 @@ else
     fi
 fi
 
-# — 1b. pip install -e —
-if python3 -c "import searx" &>/dev/null; then
-    echo "  ✓ searx Python 包已安装"
+# — 1b. pip install（仅在找到合适 Python 时执行）—
+if [ -z "$PYTHON3" ]; then
+    echo "  ⚠ 跳过 SearXNG 安装（无 Python 3.10+）"
+elif "$PYTHON3" -c "import searx" &>/dev/null; then
+    echo "  ✓ searx Python 包已安装（使用 $PYTHON3）"
 elif [ -d "$SEARXNG_DIR" ]; then
-    echo "  正在安装 Python 依赖（pip install -e）..."
-    if pip3 install -e "$SEARXNG_DIR" 2>/dev/null || \
-       pip3 install --break-system-packages -e "$SEARXNG_DIR" 2>/dev/null; then
+    echo "  正在安装 Python 依赖（使用 $PYTHON3）..."
+    # 升级 pip
+    "$PYTHON3" -m pip install --upgrade pip --quiet 2>/dev/null || true
+    # 预装 setup.py 解析时需要的依赖（msgspec + pyyaml）
+    # 配合 --no-build-isolation 让 pip 跳过隔离环境，从而能找到这些已安装的包
+    "$PYTHON3" -m pip install msgspec pyyaml --quiet 2>/dev/null || \
+    "$PYTHON3" -m pip install --break-system-packages msgspec pyyaml --quiet 2>/dev/null || true
+    # 安装 SearXNG（不用 -e，build backend 不支持 editable 模式）
+    "$PYTHON3" -m pip install --no-build-isolation "$SEARXNG_DIR" 2>/dev/null || \
+    "$PYTHON3" -m pip install --no-build-isolation --break-system-packages "$SEARXNG_DIR" 2>/dev/null || \
+    "$PYTHON3" -m pip install --no-build-isolation --user "$SEARXNG_DIR" 2>/dev/null || true
+
+    # 以实际 import 结果判断，而非 pip 退出码
+    if "$PYTHON3" -c "import searx" &>/dev/null; then
         echo "  ✓ Python 依赖安装完成"
     else
-        echo "  ✗ pip install 失败"
+        echo "  ✗ 安装后仍无法导入 searx，请手动排查："
         if [[ "$(uname)" == "Darwin" ]]; then
-            echo "    建议：brew install python3 && pip3 install -e $SEARXNG_DIR"
+            echo "    brew install libxml2 libxslt openssl"
+            echo "    $PYTHON3 -m pip install $SEARXNG_DIR"
         else
-            echo "    建议：sudo apt-get install python3-dev build-essential"
-            echo "           pip3 install -e $SEARXNG_DIR"
+            echo "    sudo apt-get install python3-dev libxml2-dev libxslt-dev"
+            echo "    $PYTHON3 -m pip install $SEARXNG_DIR"
         fi
         FAILED_ITEMS+=("searx Python 依赖")
     fi
 fi
 
-# — 1c. 自动启动配置 —
+# — 1c. 自动启动配置（仅 searx 可用时注册）—
+if "$PYTHON3" -c "import searx" &>/dev/null; then
+
 if [[ "$(uname)" == "Darwin" ]]; then
     PLIST_PATH="$HOME/Library/LaunchAgents/com.afeaturemerge.searxng.plist"
     if [ ! -f "$PLIST_PATH" ]; then
@@ -78,8 +116,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
     <string>com.afeaturemerge.searxng</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/env</string>
-        <string>python3</string>
+        <string>$(command -v "$PYTHON3")</string>
         <string>-m</string>
         <string>searx.webapp</string>
     </array>
@@ -116,7 +153,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env python3 -m searx.webapp
+ExecStart=$(command -v "$PYTHON3") -m searx.webapp
 Restart=always
 RestartSec=5
 StandardOutput=append:$SEARXNG_LOG
@@ -155,6 +192,10 @@ if [ "$READY" -eq 0 ]; then
     echo "         lsof -i :8080"
     FAILED_ITEMS+=("SearXNG 服务启动")
 fi
+
+else
+    echo "  ⚠ searx 不可用，跳过服务注册和启动"
+fi # end: if searx importable
 
 # — 1e. sxng-cli —
 if command -v sxng &>/dev/null; then
