@@ -208,3 +208,9 @@ claude mcp add superpowers -- npx -y @superpower-sh/cli@latest
 - [superpowers](https://github.com/superpowers-sh/superpowers)：提供 `brainstorming` skill，afeaturemerge 在产出方案时自动调用
 - [SearXNG](https://github.com/searxng/searxng)：本地搜索服务，`WebSearch` 不可用时的搜索兜底
 - [sxng-cli](https://github.com/hkwuks/sxng-cli)：SearXNG 的命令行前端
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=haxianhe/afeaturemerge&type=date&legend=top-left)](https://www.star-history.com/?repos=haxianhe%2Fafeaturemerge&type=date&legend=top-left)
