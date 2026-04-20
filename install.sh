@@ -257,19 +257,34 @@ else
 fi
 echo ""
 
-# ── 主 Skill 文件 ─────────────────────────────────────────────────────────────
+# ── Skill 文件 ────────────────────────────────────────────────────────────────
+BASE_URL="https://raw.githubusercontent.com/haxianhe/afeaturemerge/main"
+
+# afeaturemerge skill
 echo "Installing afeaturemerge skill..."
 mkdir -p ~/.claude/skills/afeaturemerge/hooks
 
-if curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/SKILL.md \
+if curl -sSL "$BASE_URL/skills/afeaturemerge/SKILL.md" \
        -o ~/.claude/skills/afeaturemerge/SKILL.md && \
-   curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/hooks/afeaturemerge-sync.sh \
+   curl -sSL "$BASE_URL/hooks/afeaturemerge-sync.sh" \
        -o ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh; then
     chmod +x ~/.claude/skills/afeaturemerge/hooks/afeaturemerge-sync.sh
-    echo "  ✓ Skill 文件下载完成"
+    echo "  ✓ afeaturemerge skill 下载完成"
 else
-    echo "  ✗ Skill 文件下载失败，请检查网络后重试"
-    FAILED_ITEMS+=("Skill 文件下载")
+    echo "  ✗ afeaturemerge skill 下载失败，请检查网络后重试"
+    FAILED_ITEMS+=("afeaturemerge skill 下载")
+fi
+
+# feature-extra skill
+echo "Installing feature-extra skill..."
+mkdir -p ~/.claude/skills/feature-extra
+
+if curl -sSL "$BASE_URL/skills/feature-extra/SKILL.md" \
+       -o ~/.claude/skills/feature-extra/SKILL.md; then
+    echo "  ✓ feature-extra skill 下载完成"
+else
+    echo "  ✗ feature-extra skill 下载失败，请检查网络后重试"
+    FAILED_ITEMS+=("feature-extra skill 下载")
 fi
 
 python3 <<'PYEOF'
@@ -324,5 +339,6 @@ else
     done
     echo ""
     echo "  修复后重新运行："
-    echo "  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash"
+    echo "  curl -sSL https://raw.githubusercontent.com/haxianhe/afeaturemerge/main/install.sh | bash
+"
 fi
